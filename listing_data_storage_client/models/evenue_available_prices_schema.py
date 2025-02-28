@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class EvenueAvailablePricesSchema(BaseModel):
     """
@@ -40,10 +41,15 @@ class EvenueAvailablePricesSchema(BaseModel):
     per_ticket_fee_max_tiered: Optional[StrictStr]
     place_id: StrictStr
     total_price: StrictStr
-    __properties: ClassVar[List[str]] = ["price_level_id", "price_level_secname", "price_min", "price_max", "facility_fee_max", "facility_fee_min", "facility_tiered_fee_min", "facility_tiered_fee_max", "per_ticket_fee_min", "per_ticket_fee_max", "per_ticket_fee_min_tiered", "per_ticket_fee_max_tiered", "place_id", "total_price"]
+    section: StrictStr
+    row: StrictStr
+    seat_number: Optional[StrictStr]
+    seat_type: Optional[StrictStr]
+    __properties: ClassVar[List[str]] = ["price_level_id", "price_level_secname", "price_min", "price_max", "facility_fee_max", "facility_fee_min", "facility_tiered_fee_min", "facility_tiered_fee_max", "per_ticket_fee_min", "per_ticket_fee_max", "per_ticket_fee_min_tiered", "per_ticket_fee_max_tiered", "place_id", "total_price", "section", "row", "seat_number", "seat_type"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -55,8 +61,7 @@ class EvenueAvailablePricesSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -121,6 +126,16 @@ class EvenueAvailablePricesSchema(BaseModel):
         if self.per_ticket_fee_max_tiered is None and "per_ticket_fee_max_tiered" in self.model_fields_set:
             _dict['per_ticket_fee_max_tiered'] = None
 
+        # set to None if seat_number (nullable) is None
+        # and model_fields_set contains the field
+        if self.seat_number is None and "seat_number" in self.model_fields_set:
+            _dict['seat_number'] = None
+
+        # set to None if seat_type (nullable) is None
+        # and model_fields_set contains the field
+        if self.seat_type is None and "seat_type" in self.model_fields_set:
+            _dict['seat_type'] = None
+
         return _dict
 
     @classmethod
@@ -146,7 +161,11 @@ class EvenueAvailablePricesSchema(BaseModel):
             "per_ticket_fee_min_tiered": obj.get("per_ticket_fee_min_tiered"),
             "per_ticket_fee_max_tiered": obj.get("per_ticket_fee_max_tiered"),
             "place_id": obj.get("place_id"),
-            "total_price": obj.get("total_price")
+            "total_price": obj.get("total_price"),
+            "section": obj.get("section"),
+            "row": obj.get("row"),
+            "seat_number": obj.get("seat_number"),
+            "seat_type": obj.get("seat_type")
         })
         return _obj
 

@@ -25,6 +25,7 @@ from listing_data_storage_client.models.listings_ga_section_store_schema import 
 from listing_data_storage_client.models.update_listing_seat_store_schema import UpdateListingSeatStoreSchema
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ListingSeatStoreRequestSchema(BaseModel):
     """
@@ -35,13 +36,14 @@ class ListingSeatStoreRequestSchema(BaseModel):
     event_id: StrictStr = Field(alias="eventId")
     event_timestamp: datetime = Field(alias="eventTimestamp")
     full_update: StrictBool = Field(alias="fullUpdate")
-    seats: List[ListingSeatStoreSchema]
     update: Optional[UpdateListingSeatStoreSchema] = None
+    seats: List[ListingSeatStoreSchema]
     ga_section: Optional[List[ListingsGaSectionStoreSchema]] = None
-    __properties: ClassVar[List[str]] = ["messageId", "venueId", "eventId", "eventTimestamp", "fullUpdate", "seats", "update", "ga_section"]
+    __properties: ClassVar[List[str]] = ["messageId", "venueId", "eventId", "eventTimestamp", "fullUpdate", "update", "seats", "ga_section"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -53,8 +55,7 @@ class ListingSeatStoreRequestSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -79,6 +80,9 @@ class ListingSeatStoreRequestSchema(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of update
+        if self.update:
+            _dict['update'] = self.update.to_dict()
         # override the default output from pydantic by calling `to_dict()` of each item in seats (list)
         _items = []
         if self.seats:
@@ -86,9 +90,6 @@ class ListingSeatStoreRequestSchema(BaseModel):
                 if _item_seats:
                     _items.append(_item_seats.to_dict())
             _dict['seats'] = _items
-        # override the default output from pydantic by calling `to_dict()` of update
-        if self.update:
-            _dict['update'] = self.update.to_dict()
         # override the default output from pydantic by calling `to_dict()` of each item in ga_section (list)
         _items = []
         if self.ga_section:
@@ -123,8 +124,8 @@ class ListingSeatStoreRequestSchema(BaseModel):
             "eventId": obj.get("eventId"),
             "eventTimestamp": obj.get("eventTimestamp"),
             "fullUpdate": obj.get("fullUpdate"),
-            "seats": [ListingSeatStoreSchema.from_dict(_item) for _item in obj["seats"]] if obj.get("seats") is not None else None,
             "update": UpdateListingSeatStoreSchema.from_dict(obj["update"]) if obj.get("update") is not None else None,
+            "seats": [ListingSeatStoreSchema.from_dict(_item) for _item in obj["seats"]] if obj.get("seats") is not None else None,
             "ga_section": [ListingsGaSectionStoreSchema.from_dict(_item) for _item in obj["ga_section"]] if obj.get("ga_section") is not None else None
         })
         return _obj
