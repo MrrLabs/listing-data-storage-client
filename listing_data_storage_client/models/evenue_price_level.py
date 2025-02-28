@@ -29,9 +29,10 @@ from listing_data_storage_client.models.per_ticket_fee_min import PerTicketFeeMi
 from listing_data_storage_client.models.per_ticket_fee_min_tiered import PerTicketFeeMinTiered
 from listing_data_storage_client.models.price_max import PriceMax
 from listing_data_storage_client.models.price_min import PriceMin
-from listing_data_storage_client.models.total_price import TotalPrice
+from listing_data_storage_client.models.total_price1 import TotalPrice1
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class EvenuePriceLevel(BaseModel):
     """
@@ -49,11 +50,12 @@ class EvenuePriceLevel(BaseModel):
     per_ticket_fee_max: Optional[PerTicketFeeMax]
     per_ticket_fee_min_tiered: Optional[PerTicketFeeMinTiered]
     per_ticket_fee_max_tiered: Optional[PerTicketFeeMaxTiered]
-    total_price: TotalPrice
+    total_price: TotalPrice1
     __properties: ClassVar[List[str]] = ["price_level_id", "price_level_secname", "price_min", "price_max", "facility_fee_max", "facility_fee_min", "facility_tiered_fee_min", "facility_tiered_fee_max", "per_ticket_fee_min", "per_ticket_fee_max", "per_ticket_fee_min_tiered", "per_ticket_fee_max_tiered", "total_price"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -65,8 +67,7 @@ class EvenuePriceLevel(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -188,7 +189,7 @@ class EvenuePriceLevel(BaseModel):
             "per_ticket_fee_max": PerTicketFeeMax.from_dict(obj["per_ticket_fee_max"]) if obj.get("per_ticket_fee_max") is not None else None,
             "per_ticket_fee_min_tiered": PerTicketFeeMinTiered.from_dict(obj["per_ticket_fee_min_tiered"]) if obj.get("per_ticket_fee_min_tiered") is not None else None,
             "per_ticket_fee_max_tiered": PerTicketFeeMaxTiered.from_dict(obj["per_ticket_fee_max_tiered"]) if obj.get("per_ticket_fee_max_tiered") is not None else None,
-            "total_price": TotalPrice.from_dict(obj["total_price"]) if obj.get("total_price") is not None else None
+            "total_price": TotalPrice1.from_dict(obj["total_price"]) if obj.get("total_price") is not None else None
         })
         return _obj
 

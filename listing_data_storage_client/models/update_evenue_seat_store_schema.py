@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from listing_data_storage_client.models.evenue_price_seat_store_schema import EvenuePriceSeatStoreSchema
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class UpdateEvenueSeatStoreSchema(BaseModel):
     """
@@ -30,11 +31,13 @@ class UpdateEvenueSeatStoreSchema(BaseModel):
     add_place: List[EvenuePriceSeatStoreSchema] = Field(alias="addPlace")
     remove_place: List[StrictStr] = Field(alias="removePlace")
     update_place: List[EvenuePriceSeatStoreSchema] = Field(alias="updatePlace")
+    update_info: Optional[List[Any]] = Field(default=None, alias="updateInfo")
     empty_event: Optional[StrictBool] = Field(default=False, alias="emptyEvent")
-    __properties: ClassVar[List[str]] = ["addPlace", "removePlace", "updatePlace", "emptyEvent"]
+    __properties: ClassVar[List[str]] = ["addPlace", "removePlace", "updatePlace", "updateInfo", "emptyEvent"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +49,7 @@ class UpdateEvenueSeatStoreSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -86,6 +88,11 @@ class UpdateEvenueSeatStoreSchema(BaseModel):
                 if _item_update_place:
                     _items.append(_item_update_place.to_dict())
             _dict['updatePlace'] = _items
+        # set to None if update_info (nullable) is None
+        # and model_fields_set contains the field
+        if self.update_info is None and "update_info" in self.model_fields_set:
+            _dict['updateInfo'] = None
+
         return _dict
 
     @classmethod
@@ -101,6 +108,7 @@ class UpdateEvenueSeatStoreSchema(BaseModel):
             "addPlace": [EvenuePriceSeatStoreSchema.from_dict(_item) for _item in obj["addPlace"]] if obj.get("addPlace") is not None else None,
             "removePlace": obj.get("removePlace"),
             "updatePlace": [EvenuePriceSeatStoreSchema.from_dict(_item) for _item in obj["updatePlace"]] if obj.get("updatePlace") is not None else None,
+            "updateInfo": obj.get("updateInfo"),
             "emptyEvent": obj.get("emptyEvent") if obj.get("emptyEvent") is not None else False
         })
         return _obj

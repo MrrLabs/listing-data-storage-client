@@ -18,23 +18,26 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from listing_data_storage_client.models.single_change_schema import SingleChangeSchema
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class VividseatsChangeSchema(BaseModel):
     """
     VividseatsChangeSchema
     """ # noqa: E501
     place_id: StrictStr
+    full_section: Optional[StrictStr]
     section: StrictStr
     row: StrictStr
     changes: List[SingleChangeSchema]
-    __properties: ClassVar[List[str]] = ["place_id", "section", "row", "changes"]
+    __properties: ClassVar[List[str]] = ["place_id", "full_section", "section", "row", "changes"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +49,7 @@ class VividseatsChangeSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -79,6 +81,11 @@ class VividseatsChangeSchema(BaseModel):
                 if _item_changes:
                     _items.append(_item_changes.to_dict())
             _dict['changes'] = _items
+        # set to None if full_section (nullable) is None
+        # and model_fields_set contains the field
+        if self.full_section is None and "full_section" in self.model_fields_set:
+            _dict['full_section'] = None
+
         return _dict
 
     @classmethod
@@ -92,6 +99,7 @@ class VividseatsChangeSchema(BaseModel):
 
         _obj = cls.model_validate({
             "place_id": obj.get("place_id"),
+            "full_section": obj.get("full_section"),
             "section": obj.get("section"),
             "row": obj.get("row"),
             "changes": [SingleChangeSchema.from_dict(_item) for _item in obj["changes"]] if obj.get("changes") is not None else None

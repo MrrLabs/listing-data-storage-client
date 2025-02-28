@@ -19,24 +19,26 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from listing_data_storage_client.models.price import Price
+from listing_data_storage_client.models.price1 import Price1
 from listing_data_storage_client.models.vividseats_update_item_schema import VividseatsUpdateItemSchema
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class PriceSeatStoreSchema(BaseModel):
     """
     PriceSeatStoreSchema
     """ # noqa: E501
     place_id: StrictStr = Field(alias="placeId")
-    price: Price
+    price: Price1
     quantity: StrictInt
     sellable_quantities: List[StrictInt] = Field(alias="sellableQuantities")
     update_items: Optional[List[VividseatsUpdateItemSchema]] = Field(default=None, alias="updateItems")
     __properties: ClassVar[List[str]] = ["placeId", "price", "quantity", "sellableQuantities", "updateItems"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -48,8 +50,7 @@ class PriceSeatStoreSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -95,7 +96,7 @@ class PriceSeatStoreSchema(BaseModel):
 
         _obj = cls.model_validate({
             "placeId": obj.get("placeId"),
-            "price": Price.from_dict(obj["price"]) if obj.get("price") is not None else None,
+            "price": Price1.from_dict(obj["price"]) if obj.get("price") is not None else None,
             "quantity": obj.get("quantity"),
             "sellableQuantities": obj.get("sellableQuantities"),
             "updateItems": obj.get("updateItems")

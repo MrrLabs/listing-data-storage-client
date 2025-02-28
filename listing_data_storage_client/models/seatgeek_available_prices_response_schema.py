@@ -17,25 +17,23 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr
+from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
-from listing_data_storage_client.models.single_change_schema import SingleChangeSchema
+from listing_data_storage_client.models.seatgeek_available_detailed_schema import SeatgeekAvailableDetailedSchema
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
-class TicketmasterChangeSchema(BaseModel):
+class SeatgeekAvailablePricesResponseSchema(BaseModel):
     """
-    TicketmasterChangeSchema
+    SeatgeekAvailablePricesResponseSchema
     """ # noqa: E501
-    seat_number: Optional[StrictStr] = None
-    place_id: StrictStr
-    section: StrictStr
-    row: StrictStr
-    changes: List[SingleChangeSchema]
-    __properties: ClassVar[List[str]] = ["seat_number", "place_id", "section", "row", "changes"]
+    prices: Optional[List[SeatgeekAvailableDetailedSchema]] = None
+    __properties: ClassVar[List[str]] = ["prices"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -47,12 +45,11 @@ class TicketmasterChangeSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of TicketmasterChangeSchema from a JSON string"""
+        """Create an instance of SeatgeekAvailablePricesResponseSchema from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -73,23 +70,18 @@ class TicketmasterChangeSchema(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of each item in changes (list)
+        # override the default output from pydantic by calling `to_dict()` of each item in prices (list)
         _items = []
-        if self.changes:
-            for _item_changes in self.changes:
-                if _item_changes:
-                    _items.append(_item_changes.to_dict())
-            _dict['changes'] = _items
-        # set to None if seat_number (nullable) is None
-        # and model_fields_set contains the field
-        if self.seat_number is None and "seat_number" in self.model_fields_set:
-            _dict['seat_number'] = None
-
+        if self.prices:
+            for _item_prices in self.prices:
+                if _item_prices:
+                    _items.append(_item_prices.to_dict())
+            _dict['prices'] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of TicketmasterChangeSchema from a dict"""
+        """Create an instance of SeatgeekAvailablePricesResponseSchema from a dict"""
         if obj is None:
             return None
 
@@ -97,11 +89,7 @@ class TicketmasterChangeSchema(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "seat_number": obj.get("seat_number"),
-            "place_id": obj.get("place_id"),
-            "section": obj.get("section"),
-            "row": obj.get("row"),
-            "changes": [SingleChangeSchema.from_dict(_item) for _item in obj["changes"]] if obj.get("changes") is not None else None
+            "prices": [SeatgeekAvailableDetailedSchema.from_dict(_item) for _item in obj["prices"]] if obj.get("prices") is not None else None
         })
         return _obj
 

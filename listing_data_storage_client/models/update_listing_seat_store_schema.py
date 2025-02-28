@@ -20,8 +20,10 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from listing_data_storage_client.models.listing_price_seat_store_schema import ListingPriceSeatStoreSchema
+from listing_data_storage_client.models.listings_resale import ListingsResale
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class UpdateListingSeatStoreSchema(BaseModel):
     """
@@ -30,11 +32,14 @@ class UpdateListingSeatStoreSchema(BaseModel):
     add_place: List[ListingPriceSeatStoreSchema] = Field(alias="addPlace")
     remove_place: List[StrictStr] = Field(alias="removePlace")
     update_place: List[ListingPriceSeatStoreSchema] = Field(alias="updatePlace")
+    update_info: List[StrictStr] = Field(alias="updateInfo")
     empty_event: Optional[StrictBool] = Field(default=False, alias="emptyEvent")
-    __properties: ClassVar[List[str]] = ["addPlace", "removePlace", "updatePlace", "emptyEvent"]
+    resale: Optional[ListingsResale] = None
+    __properties: ClassVar[List[str]] = ["addPlace", "removePlace", "updatePlace", "updateInfo", "emptyEvent", "resale"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +51,7 @@ class UpdateListingSeatStoreSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -86,6 +90,14 @@ class UpdateListingSeatStoreSchema(BaseModel):
                 if _item_update_place:
                     _items.append(_item_update_place.to_dict())
             _dict['updatePlace'] = _items
+        # override the default output from pydantic by calling `to_dict()` of resale
+        if self.resale:
+            _dict['resale'] = self.resale.to_dict()
+        # set to None if resale (nullable) is None
+        # and model_fields_set contains the field
+        if self.resale is None and "resale" in self.model_fields_set:
+            _dict['resale'] = None
+
         return _dict
 
     @classmethod
@@ -101,7 +113,9 @@ class UpdateListingSeatStoreSchema(BaseModel):
             "addPlace": [ListingPriceSeatStoreSchema.from_dict(_item) for _item in obj["addPlace"]] if obj.get("addPlace") is not None else None,
             "removePlace": obj.get("removePlace"),
             "updatePlace": [ListingPriceSeatStoreSchema.from_dict(_item) for _item in obj["updatePlace"]] if obj.get("updatePlace") is not None else None,
-            "emptyEvent": obj.get("emptyEvent") if obj.get("emptyEvent") is not None else False
+            "updateInfo": obj.get("updateInfo"),
+            "emptyEvent": obj.get("emptyEvent") if obj.get("emptyEvent") is not None else False,
+            "resale": ListingsResale.from_dict(obj["resale"]) if obj.get("resale") is not None else None
         })
         return _obj
 

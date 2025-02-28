@@ -23,6 +23,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class VividseatsAvailableSchema(BaseModel):
     """
@@ -37,10 +38,13 @@ class VividseatsAvailableSchema(BaseModel):
     updated: Optional[datetime]
     quantity: Optional[Annotated[int, Field(strict=True, ge=0)]]
     sellable_quantities: Optional[List[StrictInt]]
-    __properties: ClassVar[List[str]] = ["place_id", "section", "row", "price", "notes", "inserted", "updated", "quantity", "sellable_quantities"]
+    section_code: Optional[StrictStr]
+    section_grouping_code: Optional[StrictStr]
+    __properties: ClassVar[List[str]] = ["place_id", "section", "row", "price", "notes", "inserted", "updated", "quantity", "sellable_quantities", "section_code", "section_grouping_code"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -52,8 +56,7 @@ class VividseatsAvailableSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -103,6 +106,16 @@ class VividseatsAvailableSchema(BaseModel):
         if self.sellable_quantities is None and "sellable_quantities" in self.model_fields_set:
             _dict['sellable_quantities'] = None
 
+        # set to None if section_code (nullable) is None
+        # and model_fields_set contains the field
+        if self.section_code is None and "section_code" in self.model_fields_set:
+            _dict['section_code'] = None
+
+        # set to None if section_grouping_code (nullable) is None
+        # and model_fields_set contains the field
+        if self.section_grouping_code is None and "section_grouping_code" in self.model_fields_set:
+            _dict['section_grouping_code'] = None
+
         return _dict
 
     @classmethod
@@ -123,7 +136,9 @@ class VividseatsAvailableSchema(BaseModel):
             "inserted": obj.get("inserted"),
             "updated": obj.get("updated"),
             "quantity": obj.get("quantity"),
-            "sellable_quantities": obj.get("sellable_quantities")
+            "sellable_quantities": obj.get("sellable_quantities"),
+            "section_code": obj.get("section_code"),
+            "section_grouping_code": obj.get("section_grouping_code")
         })
         return _obj
 

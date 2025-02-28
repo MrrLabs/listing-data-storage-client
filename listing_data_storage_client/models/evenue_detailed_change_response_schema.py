@@ -20,22 +20,22 @@ import json
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
 from listing_data_storage_client.models.change_info import ChangeInfo
-from listing_data_storage_client.models.pagination_schema import PaginationSchema
-from listing_data_storage_client.models.ticketmaster_change_schema import TicketmasterChangeSchema
+from listing_data_storage_client.models.evenue_detailed_change_schema import EvenueDetailedChangeSchema
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
-class TickemasterChangeResponseSchema(BaseModel):
+class EvenueDetailedChangeResponseSchema(BaseModel):
     """
-    TickemasterChangeResponseSchema
+    Response schema for evenue changes endpoint.
     """ # noqa: E501
-    pagination: PaginationSchema
     info: ChangeInfo
-    change_data: Optional[List[TicketmasterChangeSchema]] = None
-    __properties: ClassVar[List[str]] = ["pagination", "info", "change_data"]
+    change_data: Optional[List[EvenueDetailedChangeSchema]] = None
+    __properties: ClassVar[List[str]] = ["info", "change_data"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -47,12 +47,11 @@ class TickemasterChangeResponseSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of TickemasterChangeResponseSchema from a JSON string"""
+        """Create an instance of EvenueDetailedChangeResponseSchema from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -73,9 +72,6 @@ class TickemasterChangeResponseSchema(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of pagination
-        if self.pagination:
-            _dict['pagination'] = self.pagination.to_dict()
         # override the default output from pydantic by calling `to_dict()` of info
         if self.info:
             _dict['info'] = self.info.to_dict()
@@ -90,7 +86,7 @@ class TickemasterChangeResponseSchema(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of TickemasterChangeResponseSchema from a dict"""
+        """Create an instance of EvenueDetailedChangeResponseSchema from a dict"""
         if obj is None:
             return None
 
@@ -98,9 +94,8 @@ class TickemasterChangeResponseSchema(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "pagination": PaginationSchema.from_dict(obj["pagination"]) if obj.get("pagination") is not None else None,
             "info": ChangeInfo.from_dict(obj["info"]) if obj.get("info") is not None else None,
-            "change_data": [TicketmasterChangeSchema.from_dict(_item) for _item in obj["change_data"]] if obj.get("change_data") is not None else None
+            "change_data": [EvenueDetailedChangeSchema.from_dict(_item) for _item in obj["change_data"]] if obj.get("change_data") is not None else None
         })
         return _obj
 
