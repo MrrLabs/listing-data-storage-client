@@ -19,9 +19,10 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List
-from listing_data_storage_client.models.price import Price
+from listing_data_storage_client.models.price1 import Price1
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class SeatStoreSchema(BaseModel):
     """
@@ -34,12 +35,13 @@ class SeatStoreSchema(BaseModel):
     row: StrictStr
     quantity: StrictInt
     sellable_quantities: List[StrictInt] = Field(alias="sellableQuantities")
-    price: Price
+    price: Price1
     notes: StrictStr
     __properties: ClassVar[List[str]] = ["placeId", "section", "section_code", "section_grouping_code", "row", "quantity", "sellableQuantities", "price", "notes"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -51,8 +53,7 @@ class SeatStoreSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -99,7 +100,7 @@ class SeatStoreSchema(BaseModel):
             "row": obj.get("row"),
             "quantity": obj.get("quantity"),
             "sellableQuantities": obj.get("sellableQuantities"),
-            "price": Price.from_dict(obj["price"]) if obj.get("price") is not None else None,
+            "price": Price1.from_dict(obj["price"]) if obj.get("price") is not None else None,
             "notes": obj.get("notes")
         })
         return _obj

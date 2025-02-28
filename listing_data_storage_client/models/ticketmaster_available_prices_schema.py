@@ -17,10 +17,11 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictBool, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class TicketmasterAvailablePricesSchema(BaseModel):
     """
@@ -29,12 +30,16 @@ class TicketmasterAvailablePricesSchema(BaseModel):
     place_id: StrictStr
     listing_price: StrictStr
     total_price: StrictStr
+    offer_id: Optional[StrictStr]
     offer_name: Optional[StrictStr] = None
+    sellable_quantities: Optional[List[StrictInt]] = None
+    protected: Optional[StrictBool] = None
     inventory_type: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["place_id", "listing_price", "total_price", "offer_name", "inventory_type"]
+    __properties: ClassVar[List[str]] = ["place_id", "listing_price", "total_price", "offer_id", "offer_name", "sellable_quantities", "protected", "inventory_type"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +51,7 @@ class TicketmasterAvailablePricesSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -72,10 +76,25 @@ class TicketmasterAvailablePricesSchema(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if offer_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.offer_id is None and "offer_id" in self.model_fields_set:
+            _dict['offer_id'] = None
+
         # set to None if offer_name (nullable) is None
         # and model_fields_set contains the field
         if self.offer_name is None and "offer_name" in self.model_fields_set:
             _dict['offer_name'] = None
+
+        # set to None if sellable_quantities (nullable) is None
+        # and model_fields_set contains the field
+        if self.sellable_quantities is None and "sellable_quantities" in self.model_fields_set:
+            _dict['sellable_quantities'] = None
+
+        # set to None if protected (nullable) is None
+        # and model_fields_set contains the field
+        if self.protected is None and "protected" in self.model_fields_set:
+            _dict['protected'] = None
 
         # set to None if inventory_type (nullable) is None
         # and model_fields_set contains the field
@@ -97,7 +116,10 @@ class TicketmasterAvailablePricesSchema(BaseModel):
             "place_id": obj.get("place_id"),
             "listing_price": obj.get("listing_price"),
             "total_price": obj.get("total_price"),
+            "offer_id": obj.get("offer_id"),
             "offer_name": obj.get("offer_name"),
+            "sellable_quantities": obj.get("sellable_quantities"),
+            "protected": obj.get("protected"),
             "inventory_type": obj.get("inventory_type")
         })
         return _obj

@@ -18,22 +18,22 @@ import re  # noqa: F401
 import json
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class SingleChangeSchema(BaseModel):
     """
     SingleChangeSchema
     """ # noqa: E501
     updated: datetime
-    previous_price: StrictStr
-    new_price: Optional[StrictStr]
-    __properties: ClassVar[List[str]] = ["updated", "previous_price", "new_price"]
+    __properties: ClassVar[List[str]] = ["updated"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -45,8 +45,7 @@ class SingleChangeSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -71,11 +70,6 @@ class SingleChangeSchema(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if new_price (nullable) is None
-        # and model_fields_set contains the field
-        if self.new_price is None and "new_price" in self.model_fields_set:
-            _dict['new_price'] = None
-
         return _dict
 
     @classmethod
@@ -88,9 +82,7 @@ class SingleChangeSchema(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "updated": obj.get("updated"),
-            "previous_price": obj.get("previous_price"),
-            "new_price": obj.get("new_price")
+            "updated": obj.get("updated")
         })
         return _obj
 

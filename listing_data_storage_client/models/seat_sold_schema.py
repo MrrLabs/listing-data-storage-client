@@ -21,8 +21,10 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from listing_data_storage_client.models.seats import Seats
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class SeatSoldSchema(BaseModel):
     """
@@ -30,14 +32,17 @@ class SeatSoldSchema(BaseModel):
     """ # noqa: E501
     section: StrictStr
     row: Optional[StrictStr]
-    seats: Dict[str, Any]
+    seats: Seats
     quantity: Annotated[int, Field(strict=True, ge=0)]
     sold_time: datetime
     price: StrictStr
-    __properties: ClassVar[List[str]] = ["section", "row", "seats", "quantity", "sold_time", "price"]
+    total_available: Optional[Annotated[int, Field(strict=True, ge=0)]] = None
+    total_capacity: Optional[Annotated[int, Field(strict=True, ge=0)]] = None
+    __properties: ClassVar[List[str]] = ["section", "row", "seats", "quantity", "sold_time", "price", "total_available", "total_capacity"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -49,8 +54,7 @@ class SeatSoldSchema(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -75,10 +79,23 @@ class SeatSoldSchema(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of seats
+        if self.seats:
+            _dict['seats'] = self.seats.to_dict()
         # set to None if row (nullable) is None
         # and model_fields_set contains the field
         if self.row is None and "row" in self.model_fields_set:
             _dict['row'] = None
+
+        # set to None if total_available (nullable) is None
+        # and model_fields_set contains the field
+        if self.total_available is None and "total_available" in self.model_fields_set:
+            _dict['total_available'] = None
+
+        # set to None if total_capacity (nullable) is None
+        # and model_fields_set contains the field
+        if self.total_capacity is None and "total_capacity" in self.model_fields_set:
+            _dict['total_capacity'] = None
 
         return _dict
 
@@ -94,10 +111,12 @@ class SeatSoldSchema(BaseModel):
         _obj = cls.model_validate({
             "section": obj.get("section"),
             "row": obj.get("row"),
-            "seats": obj.get("seats"),
+            "seats": Seats.from_dict(obj["seats"]) if obj.get("seats") is not None else None,
             "quantity": obj.get("quantity"),
             "sold_time": obj.get("sold_time"),
-            "price": obj.get("price")
+            "price": obj.get("price"),
+            "total_available": obj.get("total_available"),
+            "total_capacity": obj.get("total_capacity")
         })
         return _obj
 
